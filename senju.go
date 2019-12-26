@@ -14,6 +14,7 @@ type Senju struct {
 	l *sync.RWMutex
 	stopCh chan struct{}
 	duration time.Duration
+	errHandler func(error)
 }
 
 func New() *Senju {
@@ -23,7 +24,14 @@ func New() *Senju {
 		l:               &sync.RWMutex{},
 		stopCh:          make(chan struct{}, 1),
 		duration: 500 * time.Millisecond,
+		errHandler: func(err error) {
+			log.Println(err)
+		},
 	}
+}
+
+func (s *Senju) SetErrorHandler(f func(error)) {
+	s.errHandler = f
 }
 
 func (s *Senju) Add(name string, handler *EventHandler) {
@@ -76,7 +84,7 @@ func (s *Senju) RunWithContext(ctx context.Context) error {
 		if ok {
 			go func(){
 				if err := handler(event)(ctx); err != nil {
-					log.Println(err)
+					s.errHandler(err)
 				}
 			}()
 		}
@@ -94,7 +102,7 @@ func (s *Senju) RunWithContext(ctx context.Context) error {
 			select {
 			case <-ticker.C:
 				if err := s.searchFile(watcher); err != nil {
-					log.Println(err)
+					s.errHandler(err)
 				}
 
 			case <-ctx2.Done():
@@ -131,7 +139,7 @@ func (s *Senju) RunWithContext(ctx context.Context) error {
 				f(ctx2, target, event, eventName)
 
 			case err := <-watcher.Errors:
-				log.Println(err)
+				s.errHandler(err)
 
 			case <-ctx2.Done():
 				return
