@@ -2,7 +2,6 @@ package senju
 
 import (
 	"context"
-	"fmt"
 	"gopkg.in/fsnotify/fsnotify.v1"
 	"log"
 	"os"
@@ -135,7 +134,6 @@ func (s *Senju) RunWithContext(ctx context.Context) error {
 				log.Println(err)
 
 			case <-ctx2.Done():
-				fmt.Println("ctx cancel")
 				return
 			}
 		}
